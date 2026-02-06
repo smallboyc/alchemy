@@ -1,5 +1,7 @@
 import bpy
 from enum import Enum
+from mathutils import Quaternion
+import math
 
 # TODO : Disable plugin if the user is not in POSE mode.
 
@@ -11,6 +13,8 @@ class BoneType(Enum):
     SWITCH = "SWITCH_CT"
     FK = "FK_CT"
     IK = "IK_CT"
+    POLE_VECTOR = "IK_Pole_Vector"
+    IK_HAND_CTRL = "IK_Controller"
 
 
 def get_bones_data(bone_type: BoneType) -> list[bpy.types.PoseBone]:
@@ -60,20 +64,58 @@ def match_fk_ik_transform():
     - Use this for clean mode transition during animation.
     """
     current_mode = get_current_mode()
-    other_mode = BoneType.FK if current_mode == BoneType.IK else BoneType.IK
+    if current_mode == BoneType.IK:
+        current_bones_data = get_bones_data(current_mode)
+        other_bones_data = get_bones_data(BoneType.FK)
 
-    current_bones_data = get_bones_data(current_mode)
-    other_bones_data = get_bones_data(other_mode)
+        for current_bone in current_bones_data:
+            for other_bone in other_bones_data:
+                if current_bone.name.replace(
+                    get_current_mode_label(), ""
+                ) == other_bone.name.replace(
+                    "IK" if get_current_mode_label() == "FK" else "FK", ""
+                ):
+                    other_bone.matrix = current_bone.matrix
+                    bpy.context.view_layer.update()
+        return
 
-    for current_bone in current_bones_data:
-        for other_bone in other_bones_data:
-            if current_bone.name.replace(
-                get_current_mode_label(), ""
-            ) == other_bone.name.replace(
-                "IK" if get_current_mode_label() == "FK" else "FK", ""
-            ):
-                other_bone.matrix = current_bone.matrix
-                bpy.context.view_layer.update()
+    # # HAND VECTOR
+
+    ik_hand = get_bones_data(BoneType.IK_HAND_CTRL)[0]
+    fk_hand = get_bones_data(BoneType.FK)[2]
+    m = fk_hand.matrix.copy()
+    q_off = Quaternion((1, 0, 0), math.radians(-90))
+    m = m @ q_off.to_matrix().to_4x4()
+
+    # POLE VECTOR
+    bones_data = get_bones_data(BoneType.FK)
+    shoulder_pos = bones_data[0].head
+    elbow_pos = bones_data[1].head
+    wrist_pos = bones_data[2].head
+
+    shoulder_wrist_vec = wrist_pos - shoulder_pos
+    shoulder_elbow_vec = elbow_pos - shoulder_pos
+
+    proj_vec = (
+        shoulder_wrist_vec
+        * shoulder_elbow_vec.dot(shoulder_wrist_vec)
+        / shoulder_wrist_vec.dot(shoulder_wrist_vec)
+    )
+
+    proj_pos = shoulder_pos + proj_vec
+
+    elbow_proj_vec = elbow_pos - proj_pos
+
+    pole_offset = 0.5  # distance from elbow to pole vector.
+
+    pole_pos = elbow_pos + elbow_proj_vec.normalized() * pole_offset
+
+    ik_pole_vector = get_bones_data(BoneType.POLE_VECTOR)[0]
+    ik_pole_vector.matrix.translation = pole_pos
+
+    ik_hand.matrix = m
+
+    bpy.context.view_layer.update()
 
 
 def get_current_mode() -> bpy.types.PoseBone:
