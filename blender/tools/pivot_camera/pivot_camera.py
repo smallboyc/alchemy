@@ -65,6 +65,11 @@ def menu_func(self, context):
 
 # Main function
 
+
 def register():
     bpy.utils.register_class(PivotCameraOperator)
     bpy.types.VIEW3D_MT_add.append(menu_func)
+
+
+if __name__ == "<run_path>":
+    register()

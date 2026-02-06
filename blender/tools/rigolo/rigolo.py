@@ -194,4 +194,5 @@ def unregister():
     bpy.utils.unregister_class(RIGOLO_OT_toggle_fk_ik)
 
 
-# register()
+if __name__ == "<run_path>":
+    register()
