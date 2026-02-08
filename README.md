@@ -22,6 +22,7 @@ Running `blenderx` in a CLI launches Blender with all my custom tools placed in 
 
 ## DCC
 - [Blender](https://www.blender.org/)
+- [Maya](https://www.autodesk.com/fr)
 
 
 ## Tool List
