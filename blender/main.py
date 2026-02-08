@@ -5,6 +5,11 @@ import sys
 # ROOT_ENV
 # TOOLS_ENV
 
+# NOTE : a good practice with blender is to put an entry py file into the root scripts/startup.
+# This enables you to run scripts everytime you run blender.
+# In my point of view, I prefer to keep a separate workspace for plug-ins.
+# This keeps a standard  and clean entry point for blender without any custom scripts launched in the beginning.
+
 TOOLS_ROOT = os.environ.get("ALCHEMY_ROOT")
 
 if not TOOLS_ROOT:
